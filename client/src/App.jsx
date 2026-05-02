@@ -1,11 +1,16 @@
-import { useState } from 'react'
+import {Routes , Route} from 'react-router-dom'
+import Home from './pages/Home'
+import Auth from './pages/Auth'
+
 
 function App() {
 
   return (
-    <>
-    <h1>Hello skillDrill Frontend</h1> 
-    </>
+    <Routes>
+      <Route path='/' element={<Home />} />
+      <Route  path='/auth' element={<Auth />} />
+    </Routes>
+    
   )
 }
 
