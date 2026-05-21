@@ -3,8 +3,11 @@ import Home from './pages/Home'
 import Auth from './pages/Auth'
 import {useEffect} from "react";
 import axios from "axios";
+import {useDispatch} from 'react-redux';
+import {setUserData} from './redux/userSlice.js'
 
 function App() {
+  const dispatch = useDispatch();
   const serverUrl = import.meta.env.VITE_SERVER_URL;
 
   useEffect(()=>{
@@ -13,16 +16,16 @@ function App() {
         const result = await axios.get(serverUrl + "/api/user/current-user", {
           withCredentials:true
         });
-        console.log(result);
+        dispatch(setUserData(result.data));
         
       } catch (error) {
         console.log(error)
-        
+        dispatch(setUserData(null));
       } 
     }
     getUser();
 
-  } ,[])
+  } ,[dispatch])
 
 
   return (
