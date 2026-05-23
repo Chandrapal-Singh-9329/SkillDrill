@@ -10,7 +10,7 @@ import {useDispatch} from 'react-redux';
 import {setUserData} from '../redux/userSlice.js';
 
 
-const Auth = () => {
+const Auth = ({isModel=false}) => {
   const dispatch = useDispatch();
   const serverUrl = import.meta.env.VITE_SERVER_URL;
 
@@ -33,17 +33,19 @@ const Auth = () => {
 
 
   return (
-    <div className='w-full min-h-screen bg-amber-50 flex justify-center items-center px-6 py-20 '>
+    <div className= {`w-full ${isModel ? "py-4" :  "min-h-screen bg-amber-50 flex justify-center items-center px-6 py-20 "}`}>
       <motion.div
       initial={{opacity:0 , y:-40}}
       animate={{opacity:1 , y:0}}
       transition={{duration: 1.05}}
-      className='w-full max-w-md rounded-3xl p-8 bg-white shadow-2xl border-gray-200'>
+      
+      className={`w-full ${isModel ? 'max-w-md rounded-3xl p-8': "max-w-lg p-12 rounded-[32px] "} bg-white shadow-2xl border-gray-200`}
+      >
         <div className='flex justify-center items-center gap-3 mb-6'>
           <div className='bg-black text-white p-2 rounded-lg'>
             <BsRobot size={18} />
           </div>
-          <h1 className='font-semibold text-lg'>Interview.Ai</h1>
+          <h1 className='font-semibold text-lg'>SkillDrill</h1>
         </div>
 
         <h1 className='text-2xl md:text-3xl font-semibold text-center leading-snug mb-4'  >
@@ -56,7 +58,7 @@ const Auth = () => {
         </h1>
 
         <p className='text-center text-gray-500 text-sm 
-        md:text-base leading-relaxed mb-8'>
+        md:text-base font-semibold leading-relaxed mb-8'>
           Sign in to start AI-powered mock interviews, track your progress and unlock detailed performance insights
         </p>
         <motion.button 

@@ -8,12 +8,15 @@ import {useState} from 'react'
 import {useNavigate} from 'react-router-dom';
 import axios from 'axios';
 import { setUserData } from '../redux/userSlice';
+import AuthModel from './AuthModel.jsx'
 const ServerUrl = import.meta.env.VITE_SERVER_URL;
 
 const Navbar = () => {
     const {userData} = useSelector((state)=> state.user)
     const [showUserPopup, setShowUserPopup] = useState(false);
     const [showCreditPopup, setShowCreditPopup] = useState(false);
+    const [showAuth, setShowAuth] = useState(false);
+
     const navigate = useNavigate();
     const dispatch = useDispatch();
 
@@ -51,6 +54,11 @@ const Navbar = () => {
                     <div className='flex items-center gap-6 relative'>
                         <div className='relative'>
                             <button onClick={()=>{
+                                if(!userData)
+                                {
+                                    setShowAuth(true);
+                                    return
+                                }
                                 setShowCreditPopup(!showCreditPopup);
                                 setShowUserPopup(false)
                             }} className='flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-full text-md hover:bg-gray-200 transition cursor-pointer'>
@@ -72,6 +80,11 @@ const Navbar = () => {
 
                         <div className='relative'>
                             <button onClick={()=>{
+                                if(!userData)
+                                {
+                                    setShowAuth(true);
+                                    return
+                                }
                                 setShowUserPopup(!showUserPopup);
                                 setShowCreditPopup(false)
                             }}
@@ -97,6 +110,8 @@ const Navbar = () => {
                     </div>
             
         </motion.div>
+
+       {showAuth && <AuthModel onClose={() => setShowAuth(false)} />}
       
     </div>
   )
