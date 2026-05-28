@@ -1,5 +1,7 @@
 import express from 'express'
 import dotenv from 'dotenv'
+dotenv.config();
+
 import connectDB from './config/connectDB.js';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
@@ -8,7 +10,7 @@ import userRouter from './routes/userRoute.js';
 import interviewRouter from './routes/interviewRoute.js';
 
 
-dotenv.config();
+
 connectDB();
 
 const app = express();
