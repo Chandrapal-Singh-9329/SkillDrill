@@ -217,6 +217,9 @@ export const generateQuestion = async (req, res) => {
       return res.status(500).json({message:"AI returned empty response."});
     }
 
+    console.log("RAW AI RESPONSE:");
+    console.log(aiResponse);
+
     const questionArray = aiResponse
     .split("\n")
     .map(q=> q.trim())

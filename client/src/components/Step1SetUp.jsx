@@ -1,6 +1,8 @@
 import React, {useState} from 'react'
 import {motion} from "motion/react"
 import axios from 'axios'
+import {useDispatch, useSelector} from 'react-redux';
+import { setUserData } from "../redux/userSlice.js";
 
 import {FaUserTie, FaBriefcase, FaFileUpload, FaMicrophoneAlt, FaChartLine} from 'react-icons/fa'
 
@@ -17,6 +19,9 @@ const Step1SetUp = ({onStart}) => {
   const [resumeText, setResumeText] = useState("");
   const [analysisDone, setAnalysisDone] = useState(false);
   const[analyzing, setAnalyzing] = useState(false);
+
+  const {userData} = useSelector((state)=> state.user);
+  const dispatch = useDispatch();
 
   const handleUploadResume = async () => {
     if(!resumeFile || analyzing) return;
@@ -42,8 +47,31 @@ const Step1SetUp = ({onStart}) => {
       setAnalyzing(false);
       
     }
-    
   }
+
+
+
+    const handleStart = async () => {
+      setLoading(true);
+      try {
+        const result = await axios.post(serverUrl + "/api/interview/generate-questions", {role, experience, mode, resumeText, projects, skills}, {withCredentials:true});
+
+        console.log(result.data);
+
+        if(userData){
+          dispatch(setUserData({...userData, credits: result.data.creditsLeft}))
+        };
+
+        setLoading(false);
+        onStart(result.data);
+        
+      } catch (error) {
+        console.log("Error",error);
+        setLoading(false);
+      } 
+    }
+
+
   return (
     <motion.div
     initial={{opacity: 0}}
@@ -205,11 +233,12 @@ const Step1SetUp = ({onStart}) => {
             )}
 
             <motion.button
-            disabled={!role || !experience}
+            onClick={()=>handleStart()}
+            disabled={!role || !experience || loading}
             whileHover={{scale:1.03}}
             whileTap={{scale:0.95}}
              className="w-full disabled:bg-gray-600 bg-green-600 hover:bg-green-700 text-white py-3 rounded-full text-lg font-semibold transition duration-300 shadow-md">
-              Start Interview
+              {loading? "Starting..." : "Start Interview"}
 
             </motion.button>
 
