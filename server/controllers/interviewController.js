@@ -195,13 +195,27 @@ export const generateQuestion = async (req, res) => {
         - Questions must feel practical and realistic.
 
         Difficulty progression:
-        Question 1 → easy  
-        Question 2 → easy  
-        Question 3 → medium  
-        Question 4 → medium  
-        Question 5 → hard  
+      Question 1 → easy
+      Question 2 → easy
+      Question 3 → medium
+      Question 4 → medium
+      Question 5 → hard
 
-        Make questions based on the candidate’s role, experience,interviewMode, projects, skills, and resume details.
+      Interview Mode Rules:
+
+      If InterviewMode = "Technical":
+      - Ask technical questions.
+      - Focus on coding, projects, technologies, architecture, debugging, databases, APIs, system design, and implementation details.
+      - Use projects and skills heavily.
+
+      If InterviewMode = "HR":
+      - Do NOT ask coding questions.
+      - Do NOT ask implementation details.
+      - Do NOT ask technology-specific questions.
+      - Ask about communication, teamwork, leadership, conflict handling, strengths, weaknesses, career goals, learning experiences, motivation, and workplace situations.
+      - Projects may only be discussed from a teamwork, challenge, learning, or leadership perspective.
+
+      Generate questions strictly according to the selected InterviewMode.
         `,
       },
       {
