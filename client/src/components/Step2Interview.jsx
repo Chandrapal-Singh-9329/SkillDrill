@@ -5,7 +5,7 @@ import Timer from './Timer.jsx'
 import {motion} from 'motion/react'
 import {FaMicrophone, FaMicrophoneSlash} from "react-icons/fa";
 import axios from 'axios'
-import {BsArrowRight} from 'react-icons/bs'
+import {BsArrowRight} from 'react-icons/bs' 
 
 const serverUrl = import.meta.env.VITE_SERVER_URL;
 
@@ -172,7 +172,7 @@ const [timeLeft, setTimeLeft] = useState(questions?.[0]?.timeLimit || 60);
     }, 1000);
 
     return ()=> clearInterval(timer)
-  }, [isIntroPhase, currentIndex]);
+  }, [isIntroPhase, currentIndex]);   
 
   useEffect(() => {
     if(!isIntroPhase && currentQuestion)
