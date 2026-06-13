@@ -465,7 +465,7 @@ export const getMyInterviews = async (req,res) => {
 
 export const getInterviewReport = async (req,res) => {
   try {
-    const interview = await Interview.findById(req.params.id);
+    const interview = await interviewModel.findById(req.params.id);
 
     if(!interview)
     {
