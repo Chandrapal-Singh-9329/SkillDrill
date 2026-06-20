@@ -33,22 +33,22 @@ const Auth = ({isModel=false}) => {
 
 
   return (
-    <div className= {`w-full ${isModel ? "py-4" :  "min-h-screen bg-amber-50 flex justify-center items-center px-6 py-20 "}`}>
+    <div className= {`w-full ${isModel ? "py-4" :  "min-h-screen bg-amber-50 flex justify-center items-center px-6 py-20 dark:bg-gray-950"}`}>
       <motion.div
       initial={{opacity:0 , y:-40}}
       animate={{opacity:1 , y:0}}
       transition={{duration: 1.05}}
       
-      className={`w-full ${isModel ? 'max-w-md rounded-3xl p-8': "max-w-lg p-12 rounded-[32px] "} bg-white shadow-2xl border-gray-200`}
+      className={`w-full ${isModel ? 'max-w-md rounded-3xl p-8': "max-w-lg p-12 rounded-[32px] "} bg-white shadow-2xl border-gray-200 dark:bg-gray-900 dark:border-gray-700`}
       >
         <div className='flex justify-center items-center gap-3 mb-6'>
           <div className='bg-black text-white p-2 rounded-lg'>
             <BsRobot size={18} />
           </div>
-          <h1 className='font-semibold text-lg'>SkillDrill</h1>
+          <h1 className='font-semibold text-lg dark:text-white'>SkillDrill</h1>
         </div>
 
-        <h1 className='text-2xl md:text-3xl font-semibold text-center leading-snug mb-4'  >
+        <h1 className='text-2xl md:text-3xl font-semibold text-center leading-snug mb-4 dark:text-white'  >
           Continue With
           <span className='bg-green-100 text-green-600 px-3 py-1 inline-flex rounded-full items-center gap-2'>
             <IoSparkles size={18}/>
@@ -58,7 +58,7 @@ const Auth = ({isModel=false}) => {
         </h1>
 
         <p className='text-center text-gray-500 text-sm 
-        md:text-base font-semibold leading-relaxed mb-8'>
+        md:text-base font-semibold leading-relaxed mb-8 dark:text-white'>
           Sign in to start AI-powered mock interviews, track your progress and unlock detailed performance insights
         </p>
         <motion.button 
