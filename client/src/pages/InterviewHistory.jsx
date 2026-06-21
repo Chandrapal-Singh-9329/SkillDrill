@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FaArrowLeft } from "react-icons/fa";
 import SkeletonCard from "../components/SkeletonCard";
+import { FaTrash } from "react-icons/fa";
 
 const serverUrl = import.meta.env.VITE_SERVER_URL;
 
@@ -29,6 +30,25 @@ const InterviewHistory = () => {
 
     getMyInterviews();
   }, []);
+
+  const handleDelete = async (id) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this report?",
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      await axios.delete(`${serverUrl}/api/interview/delete/${id}`, {
+        withCredentials: true,
+      });
+
+      setInterviews((prev) => prev.filter((item) => item._id !== id));
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-linear-to-br from-gray-50 to-emerald-50 py-10 dark:from-gray-950 dark:to-gray-900">
       <div className="w-[90vw] lg:w-[70vw] max-w-[90%] mx-auto">
@@ -52,17 +72,15 @@ const InterviewHistory = () => {
 
         {loading ? (
           <div className="grid gap-6">
-            {[1, 2, 3,4,5,6,7].map((item) => (
+            {[1, 2, 3, 4, 5, 6, 7].map((item) => (
               <SkeletonCard key={item} />
             ))}
           </div>
-        ) 
-        : interviews.length === 0 ? (
+        ) : interviews.length === 0 ? (
           <div className="bg-white dark:bg-gray-900 p-10 rounded-2xl shadow border border-gray-200 dark:border-gray-700 text-center">
             <p>No interviews found. Start your first interview.</p>
           </div>
-        ) 
-        : (
+        ) : (
           <div className="grid gap-6">
             {interviews.map((item, index) => (
               <div
@@ -85,7 +103,7 @@ const InterviewHistory = () => {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-4">
                     <div className="text-right">
                       <p className="text-xl font-bold text-emerald-600">
                         {item.finalScore || 0}/10
@@ -102,6 +120,17 @@ const InterviewHistory = () => {
                     >
                       {item.status}
                     </span>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(item._id);
+                      }}
+                      className="p-2 rounded-full hover:bg-red-100 text-red-500 transition"
+                      title="Delete Report"
+                    >
+                      <FaTrash size={20} />
+                    </button>
                   </div>
                 </div>
               </div>

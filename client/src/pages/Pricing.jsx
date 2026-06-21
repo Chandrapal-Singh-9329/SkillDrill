@@ -74,8 +74,6 @@ const Pricing = () => {
         { withCredentials: true },
       );
 
-      console.log(result.data);
-
       const options = {
         key: import.meta.env.VITE_RAZORPAY_KEY_ID,
         amount: result.data.amount,

@@ -4,7 +4,7 @@ import { motion } from "motion/react";
 import { BsRobot, BsCoin } from "react-icons/bs";
 import { HiOutlineLogout } from "react-icons/hi";
 import { FaUserAstronaut } from "react-icons/fa";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { setUserData } from "../redux/userSlice";
@@ -21,8 +21,35 @@ const Navbar = () => {
   const [showAuth, setShowAuth] = useState(false);
   const { theme, setTheme } = useContext(ThemeContext);
 
+  const creditPopupRef = useRef(null);
+  const userPopupRef = useRef(null);
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        creditPopupRef.current &&
+        !creditPopupRef.current.contains(event.target)
+      ) {
+        setShowCreditPopup(false);
+      }
+
+      if (
+        userPopupRef.current &&
+        !userPopupRef.current.contains(event.target)
+      ) {
+        setShowUserPopup(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -51,19 +78,27 @@ const Navbar = () => {
             <BsRobot size={18} />
           </div>
 
-          <h1 className="font-semibold hidden md:block text-lg text-black dark:text-white">SkillDrill</h1>
+          <h1 className="font-semibold hidden md:block text-lg text-black dark:text-white">
+            SkillDrill
+          </h1>
         </div>
 
         <div className="flex items-center gap-6 relative">
-          <button title="Toggle Theme"
+          <button
+            title="Toggle Theme"
             onClick={() => setTheme(theme === "light" ? "dark" : "light")}
             className="bg-gray-100 dark:bg-gray-800 text-black dark:text-white px-3 py-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
           >
-            {theme === "light" ? <BsMoonStarsFill size={22}/> : <BsSunFill size={22} />}
+            {theme === "light" ? (
+              <BsMoonStarsFill size={22} />
+            ) : (
+              <BsSunFill size={22} />
+            )}
           </button>
 
-          <div className="relative">
-            <button title="Available Credits"
+          <div ref={creditPopupRef} className="relative">
+            <button
+              title="Available Credits"
               onClick={() => {
                 if (!userData) {
                   setShowAuth(true);
@@ -83,7 +118,7 @@ const Navbar = () => {
                 <p className="text-lg text-gray-600 dark:text-white mb-4">
                   Need more credits to continue interviews?
                 </p>
-                <button 
+                <button
                   onClick={() => {
                     navigate("/pricing");
                   }}
@@ -95,8 +130,9 @@ const Navbar = () => {
             )}
           </div>
 
-          <div className="relative">
-            <button title="Profile"
+          <div ref={userPopupRef} className="relative">
+            <button
+              title="Profile"
               onClick={() => {
                 if (!userData) {
                   setShowAuth(true);

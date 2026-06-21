@@ -503,5 +503,23 @@ export const getInterviewReport = async (req,res) => {
     return res.status(500).json({message:`failed to finish currentUser Interview ${error}`})
     
   }
-  
 }
+
+
+export const deleteInterview = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    await interviewModel.findByIdAndDelete(id);
+
+    res.json({
+      success: true,
+      message: "Interview deleted",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
