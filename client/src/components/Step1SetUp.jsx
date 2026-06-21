@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { setUserData } from "../redux/userSlice.js";
+import InterviewLoading from "./InterviewLoading";
 
 import {
   FaUserTie,
@@ -80,7 +81,11 @@ const Step1SetUp = ({ onStart }) => {
       setLoading(false);
     }
   };
-
+  
+  if (loading) {
+  return <InterviewLoading />;
+  } 
+  
   return (
     <motion.div
       initial={{ opacity: 0 }}
