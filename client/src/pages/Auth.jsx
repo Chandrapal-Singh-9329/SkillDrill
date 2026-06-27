@@ -15,6 +15,8 @@ const Auth = ({ isModel = false }) => {
   
   const [isLogin, setIsLogin] = useState(true);
   const [isOtpSent, setIsOtpSent] = useState(false); 
+  // NEW: State to track if user is in forgot password flow
+  const [isForgotPassword, setIsForgotPassword] = useState(false); 
   
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -22,6 +24,7 @@ const Auth = ({ isModel = false }) => {
   const [otp, setOtp] = useState(""); 
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState("");
   const [timer, setTimer] = useState(60); 
@@ -36,8 +39,10 @@ const Auth = ({ isModel = false }) => {
     return () => clearInterval(interval);
   }, [isOtpSent, timer]);
 
+  // Reset all states when switching modes
   const toggleAuthMode = (mode) => {
     setIsLogin(mode);
+    setIsForgotPassword(false);
     setErrors({});
     setApiError("");
     setName("");
@@ -46,7 +51,17 @@ const Auth = ({ isModel = false }) => {
     setOtp("");
     setIsOtpSent(false); 
     setTimer(60); 
-    setShowPassword(false); // for password hide if tab change
+    setShowPassword(false);
+  };
+
+  // Switch to Forgot Password mode
+  const handleForgotPasswordClick = () => {
+    setIsForgotPassword(true);
+    setErrors({});
+    setApiError("");
+    setPassword("");
+    setOtp("");
+    setIsOtpSent(false);
   };
 
   const validateForm = (checkingOtp = false) => {
@@ -58,11 +73,23 @@ const Auth = ({ isModel = false }) => {
       } else if (otp.length !== 6 || !/^\d+$/.test(otp)) { 
         newErrors.otp = "Please enter a valid 6-digit OTP.";
       }
+      
+      // If resetting password, validate the new password as well
+      if (isForgotPassword) {
+        if (!password) {
+          newErrors.password = "New password is required.";
+        } else if (password.length < 8) {
+          newErrors.password = "Password must be at least 8 characters long.";
+        } else if (!/(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*])/.test(password)) {
+          newErrors.password = "Must contain at least 1 letter, 1 number, and 1 symbol.";
+        }
+      }
+
       setErrors(newErrors);
       return Object.keys(newErrors).length === 0;
     }
 
-    if (!isLogin && !name.trim()) {
+    if (!isLogin && !isForgotPassword && !name.trim()) {
       newErrors.name = "Name is required.";
     }
 
@@ -74,13 +101,16 @@ const Auth = ({ isModel = false }) => {
       newErrors.email = "Email must end with @gmail.com";
     }
 
-    if (!password) {
-      newErrors.password = "Password is required.";
-    } else if (!isLogin) {
-      if (password.length < 8) {
-        newErrors.password = "Password must be at least 8 characters long.";
-      } else if (!/(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*])/.test(password)) {
-        newErrors.password = "Must contain at least 1 letter, 1 number, and 1 symbol.";
+    // Only validate password here if we are NOT in the first step of forgot password
+    if (!isForgotPassword) {
+      if (!password) {
+        newErrors.password = "Password is required.";
+      } else if (!isLogin) {
+        if (password.length < 8) {
+          newErrors.password = "Password must be at least 8 characters long.";
+        } else if (!/(?=.*[a-zA-Z])(?=.*\d)(?=.*[!@#$%^&*])/.test(password)) {
+          newErrors.password = "Must contain at least 1 letter, 1 number, and 1 symbol.";
+        }
       }
     }
 
@@ -94,15 +124,15 @@ const Auth = ({ isModel = false }) => {
 
     try {
       setLoading(true);
+      // Pass the isForgotPassword flag to the backend
       await axios.post(
         `${serverUrl}/api/auth/send-otp`,
-        { email, isLogin, password }, 
+        { email, isLogin, password, isForgotPassword }, 
         { withCredentials: true }
       );
 
       setIsOtpSent(true);
       setTimer(60); 
-      
     } catch (error) {
       console.log(error);
       setApiError(error.response?.data?.message || "Failed to send OTP. Try again.");
@@ -120,10 +150,9 @@ const Auth = ({ isModel = false }) => {
       setLoading(true);
       await axios.post(
         `${serverUrl}/api/auth/send-otp`,
-        { email, isLogin, password },
+        { email, isLogin, password, isForgotPassword },
         { withCredentials: true }
       );
-      
       setTimer(60); 
     } catch (error) {
       console.log(error);
@@ -139,8 +168,21 @@ const Auth = ({ isModel = false }) => {
 
     try {
       setLoading(true);
-      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
       
+      // NEW: Handle Reset Password API call
+      if (isForgotPassword) {
+        await axios.post(
+          `${serverUrl}/api/auth/reset-password`,
+          { email, otp, newPassword: password },
+          { withCredentials: true }
+        );
+        alert("Password reset successfully! You can now login with your new password.");
+        toggleAuthMode(true); // Switch back to normal login mode
+        return;
+      }
+
+      // Normal Login/Register API call
+      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/register";
       const result = await axios.post(
         `${serverUrl}${endpoint}`,
         { name, email, password, otp },
@@ -150,7 +192,7 @@ const Auth = ({ isModel = false }) => {
       dispatch(setUserData(result.data));
     } catch (error) {
       console.log(error);
-      setApiError(error.response?.data?.message || "Invalid OTP or request failed.");
+      setApiError(error.response?.data?.message || "Invalid request or OTP failed.");
     } finally {
       setLoading(false);
     }
@@ -213,7 +255,8 @@ const Auth = ({ isModel = false }) => {
 
           <div className="bg-white dark:bg-gray-800/90 p-8 sm:p-10 lg:p-14 rounded-[2.5rem] border border-gray-100 dark:border-gray-700 shadow-[0_20px_50px_rgba(0,0,0,0.05)] dark:shadow-none flex flex-col justify-center h-full backdrop-blur-sm">
             
-            {!isOtpSent && (
+            {/* Login/Register Toggle (Hidden during Forgot Password) */}
+            {!isOtpSent && !isForgotPassword && (
               <div className="flex bg-gray-100 dark:bg-gray-900/80 p-2 rounded-full mb-8 shadow-inner">
                 <button
                   onClick={() => toggleAuthMode(true)}
@@ -237,9 +280,24 @@ const Auth = ({ isModel = false }) => {
             )}
 
             <div className="space-y-5 lg:space-y-6 mb-10">
+              
+              {/* === Step 1: Initial Inputs (Before OTP is sent) === */}
               {!isOtpSent ? (
                 <>
-                  {!isLogin && (
+                  {isForgotPassword && (
+                    <div className="mb-2">
+                       <button 
+                        onClick={() => toggleAuthMode(true)} 
+                        className="flex items-center gap-2 text-sm text-gray-500 hover:text-green-600 mb-6 font-medium transition-colors w-fit"
+                      >
+                        <BsArrowLeft /> Back to Login
+                      </button>
+                      <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Reset Password</h3>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm">Enter your registered email address to receive an OTP.</p>
+                    </div>
+                  )}
+
+                  {!isLogin && !isForgotPassword && (
                     <div className="flex flex-col">
                       <input
                         type="text"
@@ -269,47 +327,55 @@ const Auth = ({ isModel = false }) => {
                     {errors.email && <span className="text-red-500 text-xs mt-2 ml-2 font-medium">{errors.email}</span>}
                   </div>
 
-                  {/* ====== Password Field with Eye Icon ====== */}
-                  <div className="flex flex-col">
-                    <div className="relative w-full">
-                      <input
-
-                        //According to State type will change(text or password)
-                        type={showPassword ? "text" : "password"} 
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => {
-                          setPassword(e.target.value);
-                          if(errors.password) setErrors({...errors, password: null});
-                        }}
-                       
-                        
-                        className={`w-full px-6 py-4 lg:py-5 pr-12 rounded-2xl border bg-gray-50/50 dark:bg-gray-900 dark:text-white outline-none transition-all placeholder-gray-400 text-lg ${errors.password ? "border-red-500 focus:ring-2 focus:ring-red-500 bg-red-50/30" : "border-gray-200 focus:ring-2 focus:ring-green-500"}`}
-                      />
+                  {!isForgotPassword && (
+                    <div className="flex flex-col">
+                      <div className="relative w-full">
+                        <input
+                          type={showPassword ? "text" : "password"} 
+                          placeholder="Password"
+                          value={password}
+                          onChange={(e) => {
+                            setPassword(e.target.value);
+                            if(errors.password) setErrors({...errors, password: null});
+                          }}
+                          className={`w-full px-6 py-4 lg:py-5 pr-12 rounded-2xl border bg-gray-50/50 dark:bg-gray-900 dark:text-white outline-none transition-all placeholder-gray-400 text-lg ${errors.password ? "border-red-500 focus:ring-2 focus:ring-red-500 bg-red-50/30" : "border-gray-200 focus:ring-2 focus:ring-green-500"}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        >
+                          {showPassword ? <BsEyeSlash size={22} /> : <BsEye size={22} />}
+                        </button>
+                      </div>
+                      {errors.password && <span className="text-red-500 text-xs mt-2 ml-2 font-medium">{errors.password}</span>}
                       
-                      {/* Toggle Button */}
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                      >
-                        {showPassword ? <BsEyeSlash size={22} /> : <BsEye size={22} />}
-                      </button>
+                      {/* NEW: Forgot Password Link (Only shown during Login) */}
+                      {isLogin && (
+                        <div className="flex justify-end mt-2">
+                          <button 
+                            type="button" 
+                            onClick={handleForgotPasswordClick}
+                            className="text-sm font-medium text-green-600 hover:text-green-700 hover:underline transition-colors"
+                          >
+                            Forgot Password?
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    {errors.password && <span className="text-red-500 text-xs mt-2 ml-2 font-medium">{errors.password}</span>}
-                  </div>
+                  )}
 
                   <button
                     onClick={handleSendOtp}
                     disabled={loading}
                     className="w-full py-4 lg:py-5 mt-4 bg-green-600 hover:bg-green-700 active:scale-[0.98] text-white rounded-2xl font-bold text-lg lg:text-xl transition-all shadow-xl disabled:opacity-70"
                   >
-                    {loading ? "Sending OTP..." : "Continue"}
+                    {loading ? "Sending..." : isForgotPassword ? "Send Reset OTP" : "Continue"}
                   </button>
                 </>
               ) : (
                 
-                /* === OTP Verification Screen === */
+                /* === Step 2: OTP Verification Screen === */
                 <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col">
                   
                   <button 
@@ -320,29 +386,57 @@ const Auth = ({ isModel = false }) => {
                   </button>
 
                   <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-2">Check your Email</h3>
-                  <p className="text-gray-500 dark:text-gray-400 mb-6">
+                  <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm">
                     We've sent a 6-digit code to <span className="font-semibold text-gray-700 dark:text-gray-300">{email}</span>
                   </p>
 
-                  <input
-                    type="text"
-                    placeholder="Enter OTP"
-                    maxLength={6}
-                    value={otp}
-                    onChange={(e) => {
-                      setOtp(e.target.value);
-                      if(errors.otp) setErrors({...errors, otp: null});
-                    }}
-                    className={`w-full px-6 py-4 lg:py-5 rounded-2xl border text-center tracking-[0.5em] text-2xl font-bold bg-gray-50/50 dark:bg-gray-900 dark:text-white outline-none transition-all ${errors.otp ? "border-red-500 focus:ring-2 focus:ring-red-500 bg-red-50/30" : "border-gray-200 focus:ring-2 focus:ring-green-500"}`}
-                  />
-                  {errors.otp && <span className="text-red-500 text-xs mt-2 text-center font-medium block">{errors.otp}</span>}
+                  <div className="space-y-4">
+                    <div>
+                      <input
+                        type="text"
+                        placeholder="Enter 6-digit OTP"
+                        maxLength={6}
+                        value={otp}
+                        onChange={(e) => {
+                          setOtp(e.target.value);
+                          if(errors.otp) setErrors({...errors, otp: null});
+                        }}
+                        className={`w-full px-6 py-4 lg:py-5 rounded-2xl border text-center tracking-[0.5em] placeholder:tracking-normal placeholder:text-base placeholder:font-medium text-2xl font-bold bg-gray-50/50 dark:bg-gray-900 dark:text-white outline-none transition-all ${errors.otp ? "border-red-500 focus:ring-2 focus:ring-red-500 bg-red-50/30" : "border-gray-200 focus:ring-2 focus:ring-green-500"}`}
+                      />
+                      {errors.otp && <span className="text-red-500 text-xs mt-2 text-center font-medium block">{errors.otp}</span>}
+                    </div>
+
+                    {/* NEW: Show New Password input if in Forgot Password mode */}
+                    {isForgotPassword && (
+                      <div className="relative w-full mt-2">
+                        <input
+                          type={showPassword ? "text" : "password"} 
+                          placeholder="Enter New Password"
+                          value={password}
+                          onChange={(e) => {
+                            setPassword(e.target.value);
+                            if(errors.password) setErrors({...errors, password: null});
+                          }}
+                          className={`w-full px-6 py-4 lg:py-5 pr-12 rounded-2xl border bg-gray-50/50 dark:bg-gray-900 dark:text-white outline-none transition-all placeholder-gray-400 text-lg ${errors.password ? "border-red-500 focus:ring-2 focus:ring-red-500 bg-red-50/30" : "border-gray-200 focus:ring-2 focus:ring-green-500"}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                        >
+                          {showPassword ? <BsEyeSlash size={22} /> : <BsEye size={22} />}
+                        </button>
+                        {errors.password && <span className="text-red-500 text-xs mt-2 ml-2 font-medium block">{errors.password}</span>}
+                      </div>
+                    )}
+                  </div>
 
                   <button
                     onClick={handleVerifyAndSubmit}
                     disabled={loading}
                     className="w-full py-4 lg:py-5 mt-6 bg-green-600 hover:bg-green-700 active:scale-[0.98] text-white rounded-2xl font-bold text-lg lg:text-xl transition-all shadow-xl disabled:opacity-70"
                   >
-                    {loading ? "Verifying..." : isLogin ? "Verify & Login" : "Verify & Create Account"}
+                    {loading ? "Processing..." : isForgotPassword ? "Reset Password" : isLogin ? "Verify & Login" : "Verify & Create Account"}
                   </button>
 
                   <div className="mt-6 text-center text-sm font-medium text-gray-500 dark:text-gray-400">
@@ -366,8 +460,8 @@ const Auth = ({ isModel = false }) => {
               )}
             </div>
 
-            {/* Google Block */}
-            {!isOtpSent && (
+            {/* Google Block (Hide if OTP sent or in Forgot Password mode) */}
+            {!isOtpSent && !isForgotPassword && (
               <>
                 <div className="flex items-center gap-4 mb-10">
                   <div className="flex-1 h-[1px] bg-gray-200 dark:bg-gray-700"></div>

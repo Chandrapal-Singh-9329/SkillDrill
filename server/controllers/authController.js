@@ -11,9 +11,9 @@ import nodemailer from "nodemailer";
 
 export const sendOtp = async (req, res) => {
   try {
-    const { email, isLogin, password } = req.body; 
+    // 1. Receive the 'isForgotPassword' flag along with other details from the frontend
+    const { email, isLogin, password, isForgotPassword } = req.body; 
 
-    // Nodemailer setup
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
@@ -25,31 +25,40 @@ export const sendOtp = async (req, res) => {
     const existingUser = await userModel.findOne({ email });
 
     // ==========================================
-    // 2. if user LOGIN
+    //  If the user is requesting a FORGOT PASSWORD OTP
     // ==========================================
-    if (isLogin) {
+    if (isForgotPassword) {
+      if (!existingUser) {
+        return res.status(404).json({ message: "User not found. Please register first." });
+      }
+    } 
+    
+    // ==========================================
+    // If the user is attempting to LOGIN
+    // ==========================================
+    else if (isLogin) {
       if (!existingUser) {
         return res.status(404).json({ message: "User not found. Please register first." });
       }
       
-      // before OTP send password will match
+      // Verify password before sending OTP for login
       const isMatch = await bcrypt.compare(password, existingUser.password);
       if (!isMatch) {
         return res.status(400).json({ message: "Invalid email or password." }); 
       }
-    }
-
+    } 
     // ==========================================
-    // 3. if user register
+    // If the user is attempting to REGISTER
     // ==========================================
-    if (!isLogin && existingUser) {
+    else if (!isLogin && existingUser) {
       return res.status(400).json({ message: "User already exists. Please login." });
     }
 
-    // OTP generate
+    // Generate a 6-digit OTP and save it to the database
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     await OtpModel.create({ email, otp });
 
+    // Configure the email content
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
@@ -57,6 +66,7 @@ export const sendOtp = async (req, res) => {
       text: `Your OTP verification code is: ${otp}. It is valid for 2 minutes.`,
     };
 
+    // Send the email
     await transporter.sendMail(mailOptions);
     return res.status(200).json({ message: "OTP sent successfully!" });
 
@@ -65,6 +75,7 @@ export const sendOtp = async (req, res) => {
     return res.status(500).json({ message: `Error sending OTP: ${error.message}` });
   }
 };
+
 // ==========================================
 // 2. Register Logic (With OTP Verification)
 // ==========================================
@@ -189,5 +200,47 @@ export const logOut = async (req, res) => {
     return res.status(200).json({ message: "logOut successfully" });
   } catch (error) {
     return res.status(500).json({ message: `logOut error ${error.message}` });
+  }
+};
+
+
+
+
+export const resetPassword = async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    // 1. Verify that the user exists in the database
+    const user = await userModel.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // 2. Verify OTP (Fetch the latest record sorted by creation time)
+    const otpRecord = await OtpModel.findOne({ email }).sort({ createdAt: -1 });
+    
+    if (!otpRecord) {
+      return res.status(400).json({ message: "OTP expired or not found. Please request a new one." });
+    }
+
+    if (otpRecord.otp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP." });
+    }
+
+    // 3. Securely hash the new password using bcrypt
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    user.password = hashedPassword;
+    await user.save();
+
+    // 5. Delete all used OTPs for this email to prevent reuse
+    await OtpModel.deleteMany({ email });
+
+    return res.status(200).json({ message: "Password reset successfully! You can now login." });
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: `Error resetting password: ${error.message}` });
   }
 };
