@@ -2,16 +2,15 @@ import React from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { motion } from "motion/react";
 import { BsRobot, BsCoin } from "react-icons/bs";
-import { HiOutlineLogout } from "react-icons/hi";
+import { HiOutlineLogout, HiOutlineTrash } from "react-icons/hi"; // Imported Trash icon
 import { FaUserAstronaut } from "react-icons/fa";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { setUserData } from "../redux/userSlice";
 import AuthModel from "./AuthModel.jsx";
-import { useContext } from "react";
 import { ThemeContext } from "../context/ThemeContext.jsx";
-import { BsMoonStarsFill, BsSunFill } from "react-icons/bs";
+import { BsMoonStarsFill, BsSunFill, BsX } from "react-icons/bs"; // Imported Cross icon for modal
 const ServerUrl = import.meta.env.VITE_SERVER_URL;
 
 const Navbar = () => {
@@ -20,6 +19,11 @@ const Navbar = () => {
   const [showCreditPopup, setShowCreditPopup] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
   const { theme, setTheme } = useContext(ThemeContext);
+
+  // NEW: States for Delete Account functionality
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [password, setPassword] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const creditPopupRef = useRef(null);
   const userPopupRef = useRef(null);
@@ -65,13 +69,52 @@ const Navbar = () => {
     }
   };
 
+  // NEW: Function to handle Account Deletion
+  const handleDeleteAccount = async () => {
+    if (!password) {
+      alert("Please enter your password to confirm deletion.");
+      return;
+    }
+
+    const confirmDelete = window.confirm(
+      "Are you absolutely sure? This action will permanently delete your account and all related data."
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      setIsDeleting(true);
+      
+      // Note: In Axios DELETE requests, the body must be passed inside the 'data' property
+      const response = await axios.delete(`${ServerUrl}/api/user/delete-account`, {
+        data: { password }, 
+        withCredentials: true,
+      });
+
+      alert(response.data.message);
+      
+      // Clear user session from frontend and close modals
+      dispatch(setUserData(null));
+      setShowDeleteModal(false);
+      setPassword("");
+      setShowUserPopup(false);
+      navigate("/");
+
+    } catch (error) {
+      console.log(error);
+      alert(error.response?.data?.message || "Failed to delete account. Please check your password.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="bg-[#f3f3f3] dark:bg-gray-950 flex justify-center px-4 pt-6 sticky top-0 z-50">
       <motion.div
         initial={{ opacity: 0, y: -40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-6xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-[24px] shadow-sm border border-grey-200 px-8 py-4 flex justify-between items-center relative"
+        className="w-full max-w-6xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-[24px] shadow-sm px-8 py-4 flex justify-between items-center relative"
       >
         <div className="flex items-center gap-3 ">
           <div className="bg-black text-white p-2 rounded-lg">
@@ -158,6 +201,7 @@ const Navbar = () => {
                 <button
                   onClick={() => {
                     navigate("/history");
+                    setShowUserPopup(false);
                   }}
                   className="w-full text-left text-lg py-2 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white"
                 >
@@ -167,18 +211,93 @@ const Navbar = () => {
                   onClick={() => {
                     handleLogout();
                   }}
-                  className="w-full text-left text-lg py-2 flex items-center gap-2 text-red-500"
+                  className="w-full text-left text-lg py-2 flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white"
                 >
                   <HiOutlineLogout size={16} />
                   Logout
                 </button>
+
+                {/* NEW: Delete Account Button in Dropdown */}
+                <div className="border-t border-gray-200 dark:border-gray-700 mt-2 pt-2">
+                  <button
+                    onClick={() => {
+                      setShowDeleteModal(true);
+                      setShowUserPopup(false);
+                    }}
+                    className="w-full text-left text-lg py-2 flex items-center gap-2 text-red-500 hover:text-red-600 transition-colors"
+                  >
+                    <HiOutlineTrash size={16} />
+                    Delete Account
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </div>
       </motion.div>
 
+      {/* Auth Modal */}
       {showAuth && <AuthModel onClose={() => setShowAuth(false)} />}
+
+{/* NEW: Delete Account Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[100] px-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            // Changed size: max-w-xl for width, p-8 for more padding, rounded-3xl
+            className="bg-white dark:bg-gray-900 w-full max-w-xl p-8 rounded-3xl shadow-2xl border border-red-100 dark:border-red-900/30"
+          >
+            <div className="flex justify-between items-center mb-5">
+              <h2 className="text-2xl font-bold text-red-600 flex items-center gap-2">
+                <HiOutlineTrash size={28} /> Delete Account
+              </h2>
+              <button 
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setPassword("");
+                }}
+                className="text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition"
+              >
+                <BsX size={32} />
+              </button>
+            </div>
+            
+            <p className="text-gray-600 dark:text-gray-300 mb-8 text-base leading-relaxed">
+              We're sorry to see you go. Please enter your password to confirm that you want to permanently delete your account. This action cannot be undone.
+            </p>
+
+            <div className="mb-8">
+              <input
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-5 py-4 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500 transition-all text-lg"
+              />
+            </div>
+
+            <div className="flex gap-4">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setPassword("");
+                }}
+                className="flex-1 py-4 rounded-xl font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition text-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={isDeleting || !password}
+                className="flex-1 py-4 rounded-xl font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition text-lg"
+              >
+                {isDeleting ? "Deleting..." : "Confirm Delete"}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
