@@ -77,7 +77,7 @@ const InterviewHistory = () => {
             ))}
           </div>
         ) : interviews.length === 0 ? (
-          <div className="bg-white dark:bg-gray-900 p-10 rounded-2xl shadow border border-gray-200 dark:border-gray-700 text-center">
+          <div className="bg-white dark:bg-gray-900 p-10 rounded-2xl shadow border border-gray-200 dark:border-gray-700 text-center dark:text-white">
             <p>No interviews found. Start your first interview.</p>
           </div>
         ) : (
