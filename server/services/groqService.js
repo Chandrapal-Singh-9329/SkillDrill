@@ -9,6 +9,8 @@ export const askAi = async (messages) => {
       {
         model: "llama-3.3-70b-versatile",
         messages: messages,
+        temperature: 0.3, // 0.3 means less creative, very strict to instructions
+        max_tokens: 1000, // Maximum words AI can generate (safety feature)
       },
       {
         headers: {
