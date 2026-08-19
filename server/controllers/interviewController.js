@@ -351,8 +351,6 @@ export const submitAnswer = async (req, res) => {
       .replace(/```/g, "")
       .trim();
 
-    console.log("CLEAN RESPONSE:");
-    console.log(cleanResponse);
 
     const parsed = JSON.parse(cleanResponse);
 
